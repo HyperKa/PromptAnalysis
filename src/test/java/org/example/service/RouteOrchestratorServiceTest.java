@@ -1,8 +1,8 @@
 package org.example.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.dto.Point;
+import org.example.dto.PointSelectionRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,11 +12,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.core.io.Resource;
 
+import org.springframework.ai.chat.model.ChatModel;  // Новый импорт
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+
 import java.util.List;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,57 +33,54 @@ class RouteOrchestratorServiceTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ChatClient chatClientMock;
 
-    // ObjectMapper больше не мокируем, используем настоящий
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private RouteOrchestratorService routeOrchestratorService;
 
     @BeforeEach
     void setUp() {
-        when(chatClientBuilderMock.build()).thenReturn(chatClientMock);
-        // Используем основной конструктор, передавая настоящий ObjectMapper
-        routeOrchestratorService = new RouteOrchestratorService(chatClientBuilderMock, objectMapper);
+        String fakeSystemTmpl = "System prompt with {total_minutes}";
+        String fakeUserTmpl = "User prompt with {user_wish}, {duration_hours}, {points_json}";
+
+        // --- Вызываем новый тестовый конструктор ---
+        // Передаем настоящий мок chatClientMock, который мы создали выше
+        routeOrchestratorService = new RouteOrchestratorService(chatClientMock, new ObjectMapper(), fakeSystemTmpl, fakeUserTmpl);
     }
 
     @Test
     void whenLlmReturnsValidJson_thenServiceReturnsThem() {
         // 1. Arrange
-        String fakeJsonResponse = "{\"selected_ids\":[\"p1_test\",\"p2_test\"]}";
+        String cloneJsonResponse = "{\"selected_ids\":[\"p1_test\",\"p2_test\"]}";
 
-        // --- Настраиваем мок ПРАВИЛЬНО ---
-        // Мы мокируем вызов .user(), который принимает Function
         when(chatClientMock.prompt()
-                .system(any(String.class))
-                .user((Resource) any(Function.class)) // <-- Вот правильный вызов для нашего сервиса
+                .system(anyString())
+                .user(anyString()) // Используем any(Function.class), так как в сервисе лямбда
                 .call()
                 .content())
-                .thenReturn(fakeJsonResponse);
+                .thenReturn(cloneJsonResponse);
 
         // 2. Act
-        //List<String> result = routeOrchestratorService.generateRoutePointIds("test", List.of(new Point("p1", "n", "c", 1)));
+        List<String> result = routeOrchestratorService.generateRoutePointIds("test", 2,
+                List.of());
 
         // 3. Assert
-        //assertNotNull(result);
-        //assertEquals(2, result.size());
-        //assertEquals("p1_test", result.get(0));
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        // assertEquals("p1_test", result.get(0));
     }
 
     @Test
     void whenLlmApiFails_thenServiceThrowsException() {
         // 1. Arrange
-        // В этом тесте objectMapper не используется, поэтому его мок не нужен
-
-        // Настраиваем мок так, чтобы он выбросил исключение
         when(chatClientMock.prompt()
-                .system(any(String.class))
-                .user((Resource) any(Function.class)) // <-- Здесь тоже используем Function
+                .system(anyString())
+                .user(anyString())
                 .call()
                 .content())
                 .thenThrow(new RuntimeException("API is down"));
 
         // 2. Act & 3. Assert
-        //assertThrows(RuntimeException.class, () -> {
-        //    routeOrchestratorService.generateRoutePointIds("test", List.of(new Point("p1", "n", "c", 1)));
-        //});
+        assertThrows(RuntimeException.class, () -> {
+            routeOrchestratorService.generateRoutePointIds("test", 2,
+                    List.of());
+        });
     }
 }
