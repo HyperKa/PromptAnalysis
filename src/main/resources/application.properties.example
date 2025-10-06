@@ -1,0 +1,11 @@
+# ==================================
+# Spring AI Configuration
+# ==================================
+# API ключ для доступа к моделям Mistral AI.
+# Вы можете получить его на официальном сайте Mistral.
+
+# Ключ настроен через Main -> Configuration -> Edit... -> Spring Boot ->
+# -> Modify Options -> Environment variables: Edit environment variables
+# в поле Name ввести SPRING_AI_MISTRALAI_API_KEY, в Value - API ключ
+
+spring.ai.mistralai.api-key=

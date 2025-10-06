@@ -54,6 +54,12 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- эта зависимость чисто повыпендриваться - круто, но жутко неудобно, легче вывести ключ в консоль в Main -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+
     </dependencies>
 
     <!-- ========================================================== -->
