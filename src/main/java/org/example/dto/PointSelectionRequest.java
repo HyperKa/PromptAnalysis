@@ -1,5 +1,6 @@
 package org.example.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.context.annotation.Description;
 import java.util.List;
 
